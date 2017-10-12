@@ -33,15 +33,15 @@ int T3_q_msg_nb=0;
 char T3_q_port1_content[5]={0,0,0,0,0};
 port_queue_t T3_q_port1 = {5, -1, -1, -1, sizeof(char), T3_q_port1_content};
 
-thread_queue_t T3_q = {&T3_q_rez, 
-		       &T3_q_event, 
+thread_queue_t T3_q = {&T3_q_rez,
+		       &T3_q_event,
 		       (union thread_config *) &T3_info,
 		       0,
 		       0,
 		       {&T3_q_port1}};
 
 struct timespec T3_timespec;
-sporadic_thread_config_t T3_info = {6000, 
+sporadic_thread_config_t T3_info = {6000,
 				    &T3_timespec,
 				    &T3_q,
 				    0};
@@ -51,7 +51,12 @@ sporadic_thread_config_t T3_info = {6000,
  * at the same date (implement a barrier to wait for all threads to be
  * ready to start all together).
  */
+pthread_mutex_t public_mutex;
+pthread_cond_t cv_wait_for_t1_t2;
+pthread_cond_t cv_wait_for_main;
 
+#define totalNumOfThreads 2
+int currentNumOfThread = 0;
 
 pthread_mutex_t lock1;
 pthread_mutex_t lock2;
@@ -71,6 +76,9 @@ int main(int argc, char* argv[])
 
   /* Q1: to be completed, initialize mutexes and conditional variables
      if you decided to use some to answer this question */
+  pthread_mutex_init(&public_mutex);
+  pthread_cond_init(&cv_wait_for_t1_t2);
+  pthread_cond_init(&cv_wait_for_main);
 
 
   /* Q2_b: to be completed, make sure there is no deadlock
@@ -97,6 +105,16 @@ int main(int argc, char* argv[])
    */
 
   /* Q1: to be completed, make sure threads have been initialized */
+  pthread_mutex_lock(&public_mutex);
+
+	while(currentNumOfThread < totalNumOfThreads)
+	{
+		pthread_cond_wait(&cv_wait_for_t1_t2, &public_mutex);
+	}
+
+	pthread_cond_broadcast(&cv_wait_for_main);
+
+  pthread_mutex_unlock(&public_mutex);
 
   set_start_time();
 
@@ -104,13 +122,22 @@ int main(int argc, char* argv[])
    * has been registered when calling set_start_time. Also make sure
    * the main does not abort threads.
    */
+   pthread_join(&T1_tid, NULL);
+   pthread_join(&T2_tid, NULL);
 }
 
 
 void T1_body()
 {
   simulate_exec_time(500000000); // 500 ms; simulate initialization time
+
   /* Q1: to be completed, start T1 at the same date as other threads */
+  pthread_mutex_lock(&public_mutex);
+  currentNumOfThread += 1;
+  pthread_cond_signal(&cv_wait_for_t1_t2);
+  pthread_cond_wait(&cv_wait_for_main, &public_mutex);
+  pthread_mutex_unlock(&public_mutex);
+
   while(1)
   {
     display_relative_date("Start thread T1", (T1_info.periodic_config).iteration_counter);
@@ -127,7 +154,7 @@ void T1_body()
     if(c%3==0)
       SendOutput_runtime(&T3_q, 0, &c);
     printf("Finish thread T1\n");
-    
+
     /*Q1: to be completed, complete function await_periodic_dispatch
       (threads_dispatch.c) */
     await_periodic_dispatch(&T1_info);
