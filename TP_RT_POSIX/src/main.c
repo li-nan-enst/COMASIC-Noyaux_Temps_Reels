@@ -76,9 +76,9 @@ int main(int argc, char* argv[])
 
   /* Q1: to be completed, initialize mutexes and conditional variables
      if you decided to use some to answer this question */
-  pthread_mutex_init(&public_mutex);
-  pthread_cond_init(&cv_wait_for_t1_t2);
-  pthread_cond_init(&cv_wait_for_main);
+  pthread_mutex_init(&public_mutex, NULL);
+  pthread_cond_init(&cv_wait_for_t1_t2, NULL);
+  pthread_cond_init(&cv_wait_for_main, NULL);
 
 
   /* Q2_b: to be completed, make sure there is no deadlock
@@ -122,8 +122,8 @@ int main(int argc, char* argv[])
    * has been registered when calling set_start_time. Also make sure
    * the main does not abort threads.
    */
-   pthread_join(&T1_tid, NULL);
-   pthread_join(&T2_tid, NULL);
+   pthread_join(T1_tid, NULL);
+   pthread_join(T2_tid, NULL);
 }
 
 
@@ -164,6 +164,12 @@ void T1_body()
 void T2_body()
 {
   /* Q1: to be completed, start T2 at the same date as other threads */
+  pthread_mutex_lock(&public_mutex);
+  currentNumOfThread += 1;
+  pthread_cond_signal(&cv_wait_for_t1_t2);
+  pthread_cond_wait(&cv_wait_for_main, &public_mutex);
+  pthread_mutex_unlock(&public_mutex);
+
   while(1)
   {
     display_relative_date("Start thread T2", (T2_info.periodic_config).iteration_counter);

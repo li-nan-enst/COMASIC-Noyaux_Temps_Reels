@@ -59,6 +59,8 @@ int create_fp_thread (unsigned int priority,
   /*
    * Q1: to be completed, set the priority of tid
    */
+   param.sched_priority = priority;
+   pthread_attr_setschedpolicy(&attr, &param);
 
   sys_ret = pthread_create (tid, &attr, (void* (*)(void*))start_routine, NULL);
 
@@ -88,9 +90,19 @@ StatusType await_periodic_dispatch(thread_config_t * config)
 {
   periodic_thread_config_t * info = &(config->periodic_config);
 
-  /* Q1: to be completed, block the thread until the next occurence of
-   * the period
+  /* Q1: to be completed, block the thread until
+   * the next occurence of the period
    */
+  info->iteration_counter++;
+  struct timespec currentTime;
+  unsigned long sec = info->period/1000;
+  unsigned long ns = info->period*1000000 - sec*1000000000;
+  currentTime.tv_sec = start_timespec.tv_sec + info->iteration_counter*sec;
+  currentTime.tv_nsec = start_timespec.tv_nsec + info->iteration_counter*ns;
+  if(currentTime.tv_nsec > 1000000000) {
+	  currentTime.tv_sec++;
+	  currentTime.tv_nsec -= 1000000000;
+  }
 
   return E_OK;
 }
@@ -134,7 +146,7 @@ StatusType await_sporadic_dispatch(thread_queue_t * global_q)
    * we need to put the sporadic thread asleep. Store in
    * info->sporadic_timespec
    */
-  
+
   return status;
 }
 
