@@ -1,0 +1,11 @@
+TP RT-POSIX
+
+Q1: 
+
+(1) Le "main", "T1" et "T2" ont utilisé le même verrou. 
+C'est pour protecter la mémoire partagé - "nombre des tâches prêts pour excuter"
+
+(2) "main" attend le signal de "T1" ou "T2" pour savoir que tous les deux sous-programmes ont été excuté,
+et ensuite on commence les deux emsemble.
+
+(3) "T1(2)" attend le signal de "main" pour savoir l'heure de la debut du tâche.  
